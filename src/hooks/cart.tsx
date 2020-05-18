@@ -42,88 +42,72 @@ const CartProvider: React.FC = ({ children }) => {
     loadProducts();
   }, []);
 
-  const addToCart = useCallback(async product => {
-    // TODO ADD A NEW ITEM TO THE CART
-    // adiciona quantidade ao produto
-    const addProductQuantity: Product = product;
-    addProductQuantity.quantity = 1;
+  const addToCart = useCallback(
+    async product => {
+      let newList = [];
 
-    const storageProducts = await AsyncStorage.getItem(
-      'GoMarketPlace:localProducts',
-    );
-    const storageProductsParsed: Product[] =
-      storageProducts !== null ? JSON.parse(storageProducts) : null;
-
-    let allProducts: Product[] = [];
-
-    if (storageProductsParsed) {
-      const productIndex = storageProductsParsed.findIndex(
-        Index => Index.id === addProductQuantity.id,
-      );
-      if (productIndex !== -1) {
-        const { quantity } = storageProductsParsed[productIndex];
-        storageProductsParsed[productIndex].quantity = quantity + 1;
-        await AsyncStorage.setItem(
-          'GoMarketPlace:localProducts',
-          JSON.stringify(storageProductsParsed),
-        );
-        setProducts(storageProductsParsed);
+      if (products.find(index => index.id === product.id)) {
+        newList = products.map(item => {
+          if (item.id === product.id) {
+            item.quantity += 1;
+          }
+          return item;
+        });
       } else {
-        allProducts = [...storageProductsParsed, addProductQuantity];
-        await AsyncStorage.setItem(
-          'GoMarketPlace:localProducts',
-          JSON.stringify(allProducts),
-        );
-        setProducts(allProducts);
+        newList = [
+          ...products,
+          {
+            ...product,
+            quantity: 1,
+          },
+        ];
       }
-    } else {
+
+      setProducts(newList);
+
       await AsyncStorage.setItem(
         'GoMarketPlace:localProducts',
-        JSON.stringify([addProductQuantity]),
+        JSON.stringify(newList),
       );
-      setProducts([addProductQuantity]);
-    }
-  }, []);
+    },
+    [products],
+  );
 
   const increment = useCallback(
     async id => {
-      // TODO INCREMENTS A PRODUCT QUANTITY IN THE CART
-      const productIndex = products.findIndex(product => product.id === id);
-      const { quantity } = products[productIndex];
+      const newList = products.map(product => {
+        if (product.id === id) {
+          product.quantity += 1;
+        }
+        return product;
+      });
+      setProducts(newList);
 
-      const newProducts = products;
-      newProducts[productIndex].quantity = quantity + 1;
       await AsyncStorage.setItem(
         'GoMarketPlace:localProducts',
-        JSON.stringify(newProducts),
+        JSON.stringify(newList),
       );
-
-      console.log(newProducts);
-      setProducts(newProducts);
     },
-
     [products],
   );
 
   const decrement = useCallback(
     async id => {
-      // TODO DECREMENTS A PRODUCT QUANTITY IN THE CART
-      const productIndex = products.findIndex(product => product.id === id);
-      const { quantity } = products[productIndex];
+      const newList = products.map(product => {
+        if (product.id === id) {
+          if (product.quantity - 1 < 0) {
+            return product;
+          }
+          product.quantity -= 1;
+        }
+        return product;
+      });
+      setProducts(newList);
 
-      if (quantity === 1) {
-        const newProducts = products;
-        newProducts.splice(productIndex, 1);
-        setProducts(newProducts);
-      } else {
-        const newProducts = products;
-        newProducts[productIndex].quantity = quantity - 1;
-        await AsyncStorage.setItem(
-          'GoMarketPlace:localProducts',
-          JSON.stringify(newProducts),
-        );
-        setProducts(newProducts);
-      }
+      await AsyncStorage.setItem(
+        'GoMarketPlace:localProducts',
+        JSON.stringify(newList),
+      );
     },
     [products],
   );
